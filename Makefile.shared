@@ -11,18 +11,36 @@
 #                                                                       #
 #########################################################################
 
-include ../config/Makefile
-CAMLRUN ?= ../boot/ocamlrun
-CAMLYACC ?= ../boot/ocamlyacc
-TARGET_BINDIR ?= $(BINDIR)
+# include ../config/Makefile
+# CAMLRUN ?= ../boot/ocamlrun
+# CAMLYACC ?= ../boot/ocamlyacc
+# TARGET_BINDIR ?= $(BINDIR)
 
-COMPILER=../ocamlc
+COMPILER=../../lib/bsc.exe
 CAMLC=$(CAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
-          -safe-string
-OPTCOMPILER=../ocamlopt
-CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+
+#COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
+#          -safe-string
+BS_COMMON_FLAGS= -bs-no-version-header  -bs-diagnose -bs-no-check-div-by-zero -bs-cross-module-opt -bs-package-name bs-platform -bs-no-warn-unimplemented-external
+
+include ../Makefile.shared
+
+# ifdef BS_RELEASE_BUILD
+# BS_FLAGS=  $(BS_COMMON_FLAGS) -bs-package-output commonjs:lib/js -bs-package-output amdjs:lib/amdjs -bs-package-output es6:lib/es6
+# else
+# BS_FLAGS=  $(BS_COMMON_FLAGS) -bs-package-output commonjs:lib/js 
+# endif
+
+BS_FLAGS= $(BS_COMMON_FLAGS) $(BS_PKG_FLAGS) 
+COMPFLAGS= $(BS_FLAGS) -strict-sequence -w +33..39-102 -g  -nostdlib \
+          -safe-string -I ../runtime -I ../others $(PROD_BS_FLAGS)
+
+
+# OPTCOMPILER=ocamlopt.opt
+# CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
+#CAMLDEP=ocamldep.opt 
+# CAMLDEP=$(CAMLRUN) ../tools/ocamldep
+
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
@@ -38,9 +56,15 @@ OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   genlex.cmo weak.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
-  stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  stringLabels.cmo moreLabels.cmo stdLabels.cmo \
+  unix.cmo unixLabels.cmo \
+  bigarray.cmo
 
-all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
+allcmis:$(OBJS:.cmo=.cmi) std_exit.cmi $(COMPILER)
+
+all: $(OBJS:.cmo=.cmj) std_exit.cmj $(COMPILER)
+# all: stdlib.cma std_exit.cmo 
+# all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
@@ -62,49 +86,53 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+# sys.ml: sys.mlp ../VERSION
+# 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
 
-clean::
-	rm -f sys.ml
+# clean::
+# 	rm -f sys.ml
 
 clean::
 	rm -f camlheader target_camlheader camlheader_ur target_camlheaderd
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx .cmj 
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
-.ml.cmo:
+.ml.cmj:
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
 
-.ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
+.ml.p.cmj:
+	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmj $<
 
 # Dependencies on the compiler
 $(OBJS) std_exit.cmo: $(COMPILER)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
+$(OBJS:.cmo=.cmj) std_exit.cmj: $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmj) std_exit.p.cmj: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
 $(OTHERS) std_exit.cmo: pervasives.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
-$(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
+$(OBJS:.cmo=.cmj) std_exit.cmj: pervasives.cmi
+$(OBJS:.cmo=.p.cmj) std_exit.p.cmj: pervasives.cmi
+$(OTHERS:.cmo=.cmj) std_exit.cmj: pervasives.cmj
+
+# Add missing dependencies
+$(OTHERS) std_exit.cmo: pervasives.cmo
+$(OTHERS:.cmo=.p.cmj) std_exit.p.cmj: pervasives.cmj
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
 	rm -f *~
+	rm -f *.annot
+	rm -f *.rawlambda *.lam
 
 include .depend
 
 depend:
-	$(CAMLDEP) *.mli *.ml > .depend
-	$(CAMLDEP) *.ml | sed -e 's/\.cmx/.p.cmx/g' >>.depend
+	$(CAMLDEP) *.mli *.ml | sed -e 's/\.cmo/.cmj/g' > .depend
+	$(CAMLDEP) *.ml | sed -e 's/\.cmx/.cmj/g' >>.depend
+	# $(CAMLDEP) *.ml | sed -e 's/\.cmx/.p.cmj/g' >>.depend

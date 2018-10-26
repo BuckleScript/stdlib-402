@@ -59,9 +59,14 @@ external ( <= ) : 'a -> 'a -> bool = "%lessequal"
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 external compare : 'a -> 'a -> int = "%compare"
 
+#if BS then 
+external min : 'a -> 'a -> 'a = "%bs_min"
+external max : 'a -> 'a -> 'a = "%bs_max"
+#else
 let min x y = if x <= y then x else y
 let max x y = if x >= y then x else y
 
+#end
 external ( == ) : 'a -> 'a -> bool = "%eq"
 external ( != ) : 'a -> 'a -> bool = "%noteq"
 
@@ -108,15 +113,42 @@ external ( +. ) : float -> float -> float = "%addfloat"
 external ( -. ) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
 external ( /. ) : float -> float -> float = "%divfloat"
+#if BS then
+external ( ** ) : float -> float -> float = "pow" [@@bs.val] [@@bs.scope "Math"]
+external exp : float -> float = "exp" [@@bs.val][@@bs.scope "Math"]
+#else
 external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
 external exp : float -> float = "caml_exp_float" "exp" "float"
+#end
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+#if BS then
+external acos : float -> float =  "acos" [@@bs.val] [@@bs.scope "Math"]
+external asin : float -> float = "asin" [@@bs.val] [@@bs.scope "Math"]
+external atan : float -> float = "atan" [@@bs.val] [@@bs.scope "Math"]
+external atan2 : float -> float -> float = "atan2" [@@bs.val] [@@bs.scope "Math"]
+#else
 external acos : float -> float = "caml_acos_float" "acos" "float"
 external asin : float -> float = "caml_asin_float" "asin" "float"
 external atan : float -> float = "caml_atan_float" "atan" "float"
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+#end
 external hypot : float -> float -> float
                = "caml_hypot_float" "caml_hypot" "float"
+#if BS then                
+external cos : float -> float = "cos" [@@bs.val] [@@bs.scope "Math"]
+external cosh : float -> float = "cosh" [@@bs.val] [@@bs.scope "Math"]
+external log : float -> float =  "log" [@@bs.val] [@@bs.scope "Math"]
+external log10 : float -> float = "log10"[@@bs.val] [@@bs.scope "Math"]
+external log1p : float -> float = "log1p" [@@bs.val] [@@bs.scope "Math"]
+external sin : float -> float =  "sin" [@@bs.val] [@@bs.scope "Math"]
+external sinh : float -> float = "sinh" [@@bs.val] [@@bs.scope "Math"]
+external sqrt : float -> float =  "sqrt" [@@bs.val] [@@bs.scope "Math"]
+external tan : float -> float =  "tan" [@@bs.val] [@@bs.scope "Math"]
+external tanh : float -> float =  "tanh" [@@bs.val] [@@bs.scope "Math"]
+external ceil : float -> float =  "ceil" [@@bs.val] [@@bs.scope "Math"]
+external floor : float -> float =  "floor" [@@bs.val] [@@bs.scope "Math"]
+external abs_float : float -> float = "abs"[@@bs.val] [@@bs.scope "Math"]
+#else
 external cos : float -> float = "caml_cos_float" "cos" "float"
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 external log : float -> float = "caml_log_float" "log" "float"
@@ -130,6 +162,7 @@ external tanh : float -> float = "caml_tanh_float" "tanh" "float"
 external ceil : float -> float = "caml_ceil_float" "ceil" "float"
 external floor : float -> float = "caml_floor_float" "floor" "float"
 external abs_float : float -> float = "%absfloat"
+#end
 external copysign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign" "float"
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
@@ -141,6 +174,22 @@ external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
 external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
+
+#if BS then 
+external infinity : float = "POSITIVE_INFINITY" 
+[@@bs.val]  [@@bs.scope "Number"]
+external neg_infinity : float = "NEGATIVE_INFINITY"
+[@@bs.val]  [@@bs.scope "Number"]
+external nan : float = "NaN"
+[@@bs.val]  [@@bs.scope "Number"]
+external max_float : float = "MAX_VALUE"
+[@@bs.val]  [@@bs.scope "Number"]
+external min_float : float = "MIN_VALUE"
+[@@bs.val]  [@@bs.scope "Number"]
+(* external epsilon_float : float = "EPSILON" (* ES 2015 *)
+[@@bs.val]  [@@bs.scope "Number"]   *)
+let epsilon_float = 2.220446049250313e-16
+#else
 let infinity =
   float_of_bits 0x7F_F0_00_00_00_00_00_00L
 let neg_infinity =
@@ -152,7 +201,8 @@ let max_float =
 let min_float =
   float_of_bits 0x00_10_00_00_00_00_00_00L
 let epsilon_float =
-  float_of_bits 0x3C_B0_00_00_00_00_00_00L
+  float_of_bits 0x3C_B0_00_00_00_00_00_00L    
+#end  
 
 type fpclass =
     FP_normal
@@ -170,10 +220,13 @@ external bytes_create : int -> bytes = "caml_create_string"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" "noalloc"
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
-                        = "caml_blit_string" "noalloc"
-external bytes_unsafe_to_string : bytes -> string = "%identity"
-external bytes_unsafe_of_string : string -> bytes = "%identity"
+                        = "caml_blit_bytes" "noalloc"
+external bytes_unsafe_to_string : bytes -> string = "%bytes_to_string"
+external bytes_unsafe_of_string : string -> bytes = "%bytes_of_string"
 
+#if BS then 
+external (^) : string -> string -> string = "#string_append"
+#else
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
   let s = bytes_create (l1 + l2) in
@@ -181,6 +234,7 @@ let ( ^ ) s1 s2 =
   string_blit s2 0 s l1 l2;
   bytes_unsafe_to_string s
 
+#end
 (* Character operations -- more in module Char *)
 
 external int_of_char : char -> int = "%identity"
@@ -218,9 +272,12 @@ let bool_of_string = function
   | "false" -> false
   | _ -> invalid_arg "bool_of_string"
 
+#if BS then   
+external string_of_int : int -> string = "String" [@@bs.val]
+#else
 let string_of_int n =
   format_int "%d" n
-
+#end
 external int_of_string : string -> int = "caml_int_of_string"
 external string_get : string -> int -> char = "%string_safe_get"
 
@@ -416,8 +473,14 @@ let print_string s = output_string stdout s
 let print_bytes s = output_bytes stdout s
 let print_int i = output_string stdout (string_of_int i)
 let print_float f = output_string stdout (string_of_float f)
+
+#if BS then
+external print_endline : string -> unit = "log" 
+[@@bs.val] [@@bs.scope "console"]
+#else    
 let print_endline s =
   output_string stdout s; output_char stdout '\n'; flush stdout
+#end    
 let print_newline () = output_char stdout '\n'; flush stdout
 
 (* Output functions on standard error *)
@@ -427,8 +490,13 @@ let prerr_string s = output_string stderr s
 let prerr_bytes s = output_bytes stderr s
 let prerr_int i = output_string stderr (string_of_int i)
 let prerr_float f = output_string stderr (string_of_float f)
+#if BS then
+external prerr_endline : string -> unit = "error" 
+[@@bs.val] [@@bs.scope "console"]    
+#else    
 let prerr_endline s =
   output_string stderr s; output_char stderr '\n'; flush stderr
+#end    
 let prerr_newline () = output_char stderr '\n'; flush stderr
 
 (* Input functions on standard input *)
@@ -488,3 +556,4 @@ let exit retcode =
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
+

@@ -95,6 +95,10 @@ external compare : 'a -> 'a -> int = "%compare"
    required by the {!Set.Make} and {!Map.Make} functors, as well as
    the {!List.sort} and {!Array.sort} functions. *)
 
+#if BS then 
+external min : 'a -> 'a -> 'a = "%bs_min"
+external max : 'a -> 'a -> 'a = "%bs_max"
+#else
 val min : 'a -> 'a -> 'a
 (** Return the smaller of the two arguments.
     The result is unspecified if one of the arguments contains
@@ -105,6 +109,7 @@ val max : 'a -> 'a -> 'a
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
+#end 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
    On mutable types such as references, arrays, byte sequences, records with
@@ -334,6 +339,91 @@ external ( *. ) : float -> float -> float = "%mulfloat"
 external ( /. ) : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
+#if BS then
+external ( ** ) : float -> float -> float =  "pow" [@@bs.val] [@@bs.scope "Math"]
+(** Exponentiation. *)
+
+external sqrt : float -> float =  "sqrt" [@@bs.val] [@@bs.scope "Math"]
+(** Square root. *)
+
+external exp : float -> float =  "exp" [@@bs.val] [@@bs.scope "Math"]
+(** Exponential. *)
+
+external log : float -> float =  "log" [@@bs.val] [@@bs.scope "Math"]
+(** Natural logarithm. *)
+
+external log10 : float -> float =  "log10" [@@bs.val] [@@bs.scope "Math"]
+(** Base 10 logarithm. *)
+
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+(** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
+    even if [x] is close to [0.0].
+    @since 3.12.0
+*)
+
+external log1p : float -> float =  "log1p" [@@bs.val] [@@bs.scope "Math"]
+(** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
+    giving numerically-accurate results even if [x] is close to [0.0].
+    @since 3.12.0
+*)
+
+external cos : float -> float =  "cos" [@@bs.val] [@@bs.scope "Math"]
+(** Cosine.  Argument is in radians. *)
+
+external sin : float -> float =  "sin" [@@bs.val] [@@bs.scope "Math"]
+(** Sine.  Argument is in radians. *)
+
+external tan : float -> float =  "tan" [@@bs.val] [@@bs.scope "Math"]
+(** Tangent.  Argument is in radians. *)
+
+external acos : float -> float =  "acos" [@@bs.val] [@@bs.scope "Math"]
+(** Arc cosine.  The argument must fall within the range [[-1.0, 1.0]].
+    Result is in radians and is between [0.0] and [pi]. *)
+
+external asin : float -> float =  "asin" [@@bs.val] [@@bs.scope "Math"]
+(** Arc sine.  The argument must fall within the range [[-1.0, 1.0]].
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
+
+external atan : float -> float =  "atan" [@@bs.val] [@@bs.scope "Math"]
+(** Arc tangent.
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
+
+external atan2 : float -> float -> float =  "atan2" [@@bs.val] [@@bs.scope "Math"]
+(** [atan2 y x] returns the arc tangent of [y /. x].  The signs of [x]
+    and [y] are used to determine the quadrant of the result.
+    Result is in radians and is between [-pi] and [pi]. *)
+
+external hypot : float -> float -> float
+               = "caml_hypot_float" "caml_hypot" "float"
+(** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
+  of the hypotenuse of a right-angled triangle with sides of length
+  [x] and [y], or, equivalently, the distance of the point [(x,y)]
+  to origin.
+  @since 4.00.0  *)
+
+external cosh : float -> float =  "cosh" [@@bs.val] [@@bs.scope "Math"]
+(** Hyperbolic cosine.  Argument is in radians. *)
+
+external sinh : float -> float =  "sinh" [@@bs.val] [@@bs.scope "Math"]
+(** Hyperbolic sine.  Argument is in radians. *)
+
+external tanh : float -> float =  "tanh" [@@bs.val] [@@bs.scope "Math"]
+(** Hyperbolic tangent.  Argument is in radians. *)
+
+external ceil : float -> float =  "ceil" [@@bs.val] [@@bs.scope "Math"]
+(** Round above to an integer value.
+    [ceil f] returns the least integer value greater than or equal to [f].
+    The result is returned as a float. *)
+
+external floor : float -> float =  "floor" [@@bs.val] [@@bs.scope "Math"]
+(** Round below to an integer value.
+    [floor f] returns the greatest integer value less than or
+    equal to [f].
+    The result is returned as a float. *)
+
+external abs_float : float -> float = "abs" [@@bs.val] [@@bs.scope "Math"]
+(** [abs_float f] returns the absolute value of [f]. *)
+#else
 external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
 (** Exponentiation. *)
 
@@ -417,7 +507,7 @@ external floor : float -> float = "caml_floor_float" "floor" "float"
 
 external abs_float : float -> float = "%absfloat"
 (** [abs_float f] returns the absolute value of [f]. *)
-
+#end
 external copysign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign" "float"
 (** [copysign x y] returns a float whose absolute value is that of [x]
@@ -458,7 +548,21 @@ external int_of_float : float -> int = "%intoffloat"
 (** Truncate the given floating-point number to an integer.
    The result is unspecified if the argument is [nan] or falls outside the
    range of representable integers. *)
-
+#if BS then 
+external infinity : float = "POSITIVE_INFINITY" 
+[@@bs.val]  [@@bs.scope "Number"]
+external neg_infinity : float = "NEGATIVE_INFINITY"
+[@@bs.val]  [@@bs.scope "Number"]
+external nan : float = "NaN"
+[@@bs.val]  [@@bs.scope "Number"]
+external max_float : float = "MAX_VALUE"
+[@@bs.val]  [@@bs.scope "Number"]
+external min_float : float = "MIN_VALUE"
+[@@bs.val]  [@@bs.scope "Number"]
+(* external epsilon_float : float = "EPSILON" (* ES 2015 *)
+[@@bs.val]  [@@bs.scope "Number"]   *)
+val epsilon_float : float
+#else
 val infinity : float
 (** Positive infinity. *)
 
@@ -483,6 +587,8 @@ val epsilon_float : float
 (** The difference between [1.0] and the smallest exactly representable
     floating-point number greater than [1.0]. *)
 
+#end
+
 type fpclass =
     FP_normal           (** Normal number, none of the below *)
   | FP_subnormal        (** Number very close to 0.0, has reduced precision *)
@@ -502,7 +608,11 @@ external classify_float : float -> fpclass = "caml_classify_float"
    More string operations are provided in module {!String}.
 *)
 
+#if BS then
+external (^) : string -> string -> string = "#string_append"
+#else
 val ( ^ ) : string -> string -> string
+#end
 (** String concatenation. *)
 
 
@@ -543,9 +653,12 @@ val bool_of_string : string -> bool
    Raise [Invalid_argument "bool_of_string"] if the string is not
    ["true"] or ["false"]. *)
 
+#if BS then    
+external string_of_int : int -> string = "String" [@@bs.val]
+#else
 val string_of_int : int -> string
 (** Return the string representation of an integer, in decimal. *)
-
+#end
 external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
    The string is read in decimal (by default) or in hexadecimal (if it
@@ -619,7 +732,12 @@ val print_int : int -> unit
 val print_float : float -> unit
 (** Print a floating-point number, in decimal, on standard output. *)
 
+#if BS then
+external print_endline : string -> unit = "log" 
+[@@bs.val] [@@bs.scope "console"]
+#else    
 val print_endline : string -> unit
+#end
 (** Print a string, followed by a newline character, on
    standard output and flush standard output. *)
 
@@ -647,7 +765,12 @@ val prerr_int : int -> unit
 val prerr_float : float -> unit
 (** Print a floating-point number, in decimal, on standard error. *)
 
+#if BS then
+external prerr_endline : string -> unit = "error" 
+[@@bs.val] [@@bs.scope "console"]
+#else    
 val prerr_endline : string -> unit
+#end  
 (** Print a string, followed by a newline character on standard
    error and flush standard error. *)
 
@@ -1090,3 +1213,4 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
+

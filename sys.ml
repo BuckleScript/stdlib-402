@@ -31,9 +31,13 @@ let word_size = word_size ()
 let unix = unix ()
 let win32 = win32 ()
 let cygwin = cygwin ()
+#if BS then
+let max_array_length = 2147483647 (* 2^ 31 - 1 *)
+let max_string_length = 2147483647
+#else    
 let max_array_length = (1 lsl (word_size - 10)) - 1;;
 let max_string_length = word_size / 8 * max_array_length - 1;;
-
+#end
 external file_exists: string -> bool = "caml_sys_file_exists"
 external is_directory : string -> bool = "caml_sys_is_directory"
 external remove: string -> unit = "caml_sys_remove"
@@ -90,4 +94,4 @@ let catch_break on =
 
 (* The version string is found in file ../VERSION *)
 
-let ocaml_version = "%%VERSION%%";;
+let ocaml_version = "4.02.3+dev1-2015-07-10";;

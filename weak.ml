@@ -16,8 +16,11 @@
 type 'a t;;
 
 external create: int -> 'a t = "caml_weak_create";;
-
+#if BS then
+external length : 'a t -> int = "%array_length"
+#else
 let length x = Obj.size(Obj.repr x) - 1;;
+#end
 
 external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
 external get: 'a t -> int -> 'a option = "caml_weak_get";;
@@ -35,7 +38,11 @@ let fill ar ofs len x =
     done
   end
 ;;
-
+#if BS then 
+module Sys = struct
+  let max_array_length = 2147483647 (* 2**31 - 1*)
+end
+#end
 (** Weak hash tables *)
 
 module type S = sig
